@@ -18449,7 +18449,7 @@ var dom = require("./lib/dom");
 var Range = require("./range").Range;
 
 
-function LineWidgets(session) {
+function LineWidgets(session, options) {
     this.session = session;
     this.session.widgetManager = this;
     this.session.getRowLength = this.getRowLength;
@@ -18460,7 +18460,7 @@ function LineWidgets(session) {
     this.session._changedWidgets = [];
     this.$onChangeEditor = this.$onChangeEditor.bind(this);
     
-    this.session.on("change", this.updateOnChange);
+    this.session.on("change", options.updateOnChange || this.updateOnChange);
     this.session.on("changeFold", this.updateOnFold);
     this.session.on("changeEditor", this.$onChangeEditor);
 }

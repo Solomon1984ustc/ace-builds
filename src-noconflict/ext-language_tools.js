@@ -1262,21 +1262,6 @@ exports.retrieveFollowingIdentifier = function(text, pos, regex) {
     return buf;
 };
 
-exports.getCompletionPrefix = function (editor) {
-    var pos = editor.getCursorPosition();
-    var line = editor.session.getLine(pos.row);
-    var prefix;
-    editor.completers.forEach(function(completer) {
-        if (completer.identifierRegexps) {
-            completer.identifierRegexps.forEach(function(identifierRegex) {
-                if (!prefix && identifierRegex)
-                    prefix = this.retrievePrecedingIdentifier(line, pos.column, identifierRegex);
-            }.bind(this));
-        }
-    }.bind(this));
-    return prefix || this.retrievePrecedingIdentifier(line, pos.column);
-};
-
 });
 
 ace.define("ace/autocomplete",["require","exports","module","ace/keyboard/hash_handler","ace/autocomplete/popup","ace/autocomplete/util","ace/lib/event","ace/lib/lang","ace/lib/dom","ace/snippets"], function(require, exports, module) {
@@ -1477,7 +1462,7 @@ var Autocomplete = function() {
         var pos = editor.getCursorPosition();
 
         var line = session.getLine(pos.row);
-        var prefix = util.getCompletionPrefix(editor);
+        var prefix = util.retrievePrecedingIdentifier(line, pos.column);
 
         this.base = session.doc.createAnchor(pos.row, pos.column - prefix.length);
         this.base.$insertRight = true;
@@ -1491,7 +1476,7 @@ var Autocomplete = function() {
                 var pos = editor.getCursorPosition();
                 var line = session.getLine(pos.row);
                 callback(null, {
-                    prefix: prefix,
+                    prefix: util.retrievePrecedingIdentifier(line, pos.column, results && results[0] && results[0].identifierRegex), // prefix,
                     matches: matches,
                     finished: (--total === 0)
                 });
@@ -1880,15 +1865,30 @@ var loadSnippetFile = function(id) {
     });
 };
 
+function getCompletionPrefix(editor) {
+    var pos = editor.getCursorPosition();
+    var line = editor.session.getLine(pos.row);
+    var prefix;
+    editor.completers.forEach(function(completer) {
+        if (completer.identifierRegexps) {
+            completer.identifierRegexps.forEach(function(identifierRegex) {
+                if (!prefix && identifierRegex)
+                    prefix = util.retrievePrecedingIdentifier(line, pos.column, identifierRegex);
+            });
+        }
+    });
+    return prefix || util.retrievePrecedingIdentifier(line, pos.column);
+}
+
 var doLiveAutocomplete = function(e) {
     var editor = e.editor;
     var hasCompleter = editor.completer && editor.completer.activated;
     if (e.command.name === "backspace") {
-        if (hasCompleter && !util.getCompletionPrefix(editor))
+        if (hasCompleter && !getCompletionPrefix(editor))
             editor.completer.detach();
     }
     else if (e.command.name === "insertstring") {
-        var prefix = util.getCompletionPrefix(editor);
+        var prefix = getCompletionPrefix(editor);
         if (prefix && !hasCompleter) {
             if (!editor.completer) {
                 editor.completer = new Autocomplete();
