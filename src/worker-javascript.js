@@ -11742,7 +11742,7 @@ oop.inherits(JavaScriptWorker, Mirror);
             lastsemic: true,
             onevar: false,
             passfail: false,
-            maxerr: 100,
+            maxerr: 1000,
             expr: true,
             multistr: true,
             globalstrict: true
